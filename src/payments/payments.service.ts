@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { envs } from 'src/config';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { envs, NATS_SERVICE } from 'src/config';
 import Stripe from 'stripe';
 import { PaymentSessionDto } from './dto/payment-session.to';
 import { Request, Response } from 'express';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class PaymentsService {
     private readonly stripe = new Stripe(envs.stripe_secret);
-
+    private readonly logger = new Logger("Payment-service");
+    constructor(
+        @Inject(NATS_SERVICE) private readonly client:ClientProxy
+    ){}
     async createPaymentSession(paymentSessionDto:PaymentSessionDto ){
         const {currency, items, orderId} = paymentSessionDto;
         const lineItems = items.map( (item) => {
@@ -19,7 +23,7 @@ export class PaymentsService {
                     },
                     unit_amount: Math.round( item.price * 100), // $20
                 },
-                quantity: item.cuantity
+                quantity: item.quantity
             }
         })
         const session = await this.stripe.checkout.sessions.create({
@@ -36,7 +40,11 @@ export class PaymentsService {
             cancel_url: envs.stripe_cancel_url
         });
 
-        return session;
+        return {
+            cancelUrl: session.cancel_url,
+            successUrl: session.success_url,
+            url: session.url
+        };
     }   
 
     async stripeWebHook(req:Request, res: Response){
@@ -60,6 +68,14 @@ export class PaymentsService {
         switch(event.type){
             case 'charge.succeeded':
                 const chargeSucceded = event.data.object;
+                const payload = {
+                    stripePaymentId: chargeSucceded.id,
+                    orderId: chargeSucceded.metadata.orderId,
+                    receipUrl: chargeSucceded.receipt_url
+                }
+
+                this.logger.log({payload});
+                this.client.emit('payment.succeeded', payload);
                 // TODO: Llamar nuestro microservicio
                 console.log({
                     metadata: chargeSucceded.metadata,

@@ -25,5 +25,5 @@ export class PaymentSessionItemDto{
 
     @IsNumber()
     @IsPositive()
-    cuantity: number;
+    quantity: number;
 }
