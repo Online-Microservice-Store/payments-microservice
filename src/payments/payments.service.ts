@@ -13,24 +13,26 @@ export class PaymentsService {
         @Inject(NATS_SERVICE) private readonly client:ClientProxy
     ){}
     async createPaymentSession(paymentSessionDto:PaymentSessionDto ){
-        const {currency, items, orderId} = paymentSessionDto;
+        const {currency, items, orderId, clientId} = paymentSessionDto;
         const lineItems = items.map( (item) => {
             return {
                 price_data: {
                     currency: currency,
                     product_data: {
-                        name: item.name
+                        name: item.productId
                     },
                     unit_amount: Math.round( item.price * 100), // $20
                 },
                 quantity: item.quantity
             }
-        })
+        });
+        
         const session = await this.stripe.checkout.sessions.create({
             //Put the order´s id
             payment_intent_data: {
                 metadata: {
-                    orderId: orderId
+                    orderId: orderId,
+                    clientId: clientId,
                 }
             },
 
@@ -50,7 +52,6 @@ export class PaymentsService {
     async stripeWebHook(req:Request, res: Response){
         const sig = req.headers['stripe-signature'];
         let event : Stripe.Event;
-        console.log("EN STRIPE HOOKKKK");
         // const endpointSecret = "whsec_57602a1dfb1dfac30541fdc7dbd9b00d308b3a418bb5e3b15e1be35a64ce31d3";
         const endpointSecret = envs.stripe_endpoint_secret;
         try {

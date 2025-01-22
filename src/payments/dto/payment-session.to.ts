@@ -12,12 +12,15 @@ export class PaymentSessionDto {
     @ArrayMinSize(1)
     @ValidateNested({each: true})
     @Type( () => PaymentSessionItemDto)
-    items: PaymentSessionItemDto[]
+    items: PaymentSessionItemDto[];
+
+    @IsString()
+    clientId: string;
 }
 
 export class PaymentSessionItemDto{
     @IsString()
-    name: string;
+    productId: string;
 
     @IsNumber()
     @IsPositive()
@@ -25,5 +28,5 @@ export class PaymentSessionItemDto{
 
     @IsNumber()
     @IsPositive()
-    quantity: number;
+    quantity: number;   
 }
