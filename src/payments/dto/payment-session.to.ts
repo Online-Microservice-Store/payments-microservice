@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsArray, IsNumber, IsPositive, IsString, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsArray, IsNumber, IsPositive, IsString, Min, ValidateNested } from "class-validator";
 
 export class PaymentSessionDto {
     @IsString()
@@ -23,7 +23,7 @@ export class PaymentSessionItemDto{
     productId: string;
 
     @IsNumber()
-    @IsPositive()
+    @Min(0)
     price: number;
 
     @IsNumber()
