@@ -24,6 +24,7 @@ async function bootstrap() {
   { inheritAppConfig: true}
 )
 
+  console.log("Health check configured");
   await app.startAllMicroservices();
   await app.listen(envs.port);
   logger.log("Payments microservice started " + envs.port);
